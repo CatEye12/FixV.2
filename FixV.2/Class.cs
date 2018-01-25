@@ -8,15 +8,15 @@ namespace FixV._2
 {
    class Class
    {
+        static SldWorks swApp;
         static ModelDoc2 swModel;
         public static swDocumentTypes_e docType;
         static View swView;
         static DrawingDoc drw;
         static int m;
         private static string configName = String.Empty;
-        static SldWorks swApp;
         public static string[] massaValues = null;
-
+        public static int unitsType = 0;
 
         public static string configuracione
         {
@@ -107,10 +107,9 @@ namespace FixV._2
                 string sModelName = swView.GetReferencedModelName();
                 Class.configuracione = swView.ReferencedConfiguration;
                 swModel = swView.ReferencedDocument;
-
             }
         }
-
+        
 
 
         /// <summary>
@@ -297,36 +296,38 @@ namespace FixV._2
                     Propertiy.Division = "Деталі";
                 }
             }
-
-
+            
             massaValues = Class.GetModelWeight();
             if (massaValues.Length > 1)
             {
                 // МАССА
                 if (Propertiy.MassaFormat != String.Empty)
                 {
-                    switch (Propertiy.MassaFormat)
+
+                    switch (Propertiy.MassaFormat.Substring(1,1)) // проверяем последнюю цифру свойства MassaFormat
                     {
-                        case "20":
+                        case "0":
                             Propertiy.Weight = massaValues[1].ToString();
                             break;
-
-                        case "30":
+                        case "1":
                             Propertiy.Weight = massaValues[2].ToString();
                             break;
-                        case "":
+                        case "2":
                             Propertiy.Weight = massaValues[3].ToString();
+                            break;
+                        case "3":
+                            Propertiy.Weight = massaValues[4].ToString();
+                            break;
+                        case "4":
+                            Propertiy.Weight = massaValues[5].ToString();
                             break;
                     }
                 }
                 else
                 {
-                    Propertiy.Weight = massaValues[0].ToString(); 
+                    Propertiy.Weight = massaValues[1].ToString(); 
                 }
             }
-
-
-            swModel.ForceRebuild3(false);
         }
 
 
@@ -353,6 +354,8 @@ namespace FixV._2
                 swModel.Extension.CustomPropertyManager[""].Add3("N извещения", 30, Propertiy.Notification, 2);
                 swModel.Extension.CustomPropertyManager[""].Add3("Изменение", 30, Propertiy.Changing, 2);
                 swModel.Extension.CustomPropertyManager[""].Add3("Тип документа", 30, Propertiy.DocType, 2);
+                swModel.Extension.CustomPropertyManager[""].Add3("MassaFormat", 30, Propertiy.MassaFormat, 2);
+
             }
             else if (docType == swDocumentTypes_e.swDocDRAWING)
             {
@@ -371,34 +374,83 @@ namespace FixV._2
             
            swModel.ForceRebuild3(false);
         }
-        
+       
 
         public static string[] GetModelWeight()
         {
             string path = swModel.GetPathName();
-            
-            //if (path.ToUpper().Contains(".SLD")) { path = path.Remove(path.Length - 7, 7); }
-            
-
-            double[] masProperties = swApp.GetMassProperties2(path, Class.configuracione, 1);
-            double mass = Convert.ToDouble(masProperties?[5]);
-
+            swModel.ShowConfiguration2(Class.configuracione);
+            //swModel.ForceRebuild3(false);
+            //swModel.Save();
+            int status = 99;
+            double[] masProperties = swModel.Extension.GetMassProperties2(1, out status, true);
+            double massa = Convert.ToDouble(masProperties?[5]); // в килограммах
+            double mass = massa * 1000; //в граммах
 
             if (mass > 0)// если деталь имеет массу
             {
                 string[] resMas = new string[7];
 
-                string mantisa = Math.IEEERemainder(mass, 1).ToString();
-                string integerVal = Math.Truncate(mass).ToString() + ",";
-
-                string tempValue = "0";
+                string mantisa = String.Empty;
+                string integerVal = String.Empty;
+                string tempValue = String.Empty;
 
                 if (mass < 1000)
                 {
+                    unitsType = (int)MassaFormatUnits.grams;
+
+                    mantisa = (mass - (1* (Math.Floor(mass/ 1) * Math.Sign(mass)))).ToString();
+                    integerVal = Math.Truncate(mass).ToString() + ",";
+
                     if (mantisa != "0")// г-кг
                     {
-                        resMas[0] = Math.Truncate(mass * 1000).ToString() + "  г";
-                        resMas[1] = Math.Truncate(mass).ToString(); // целое значение
+                        resMas[0] = massa.ToString().Substring(0, 5); // в кг с точностью 3 знака
+
+                        resMas[1] = Math.Truncate(mass).ToString() + "  г";
+
+                        tempValue = mantisa.Substring(2, 1);
+                        resMas[2] = integerVal + tempValue; // 1 знак после запятой
+
+                        tempValue = mantisa.Substring(2, 2);
+                        resMas[3] = integerVal + tempValue; // 2 знака после запятой
+
+                        tempValue = mantisa.Substring(2, 3);
+                        resMas[4] = integerVal + tempValue; // 3 знака после запятой
+
+                        tempValue = mantisa.Substring(2, 4);
+                        resMas[5] = integerVal + tempValue; // 4 знака после запятой
+                    }
+                    else
+                    {
+                        resMas[0] = massa.ToString().Substring(0, 5); // в кг с точностью 3 знака
+
+                        resMas[1] = Math.Truncate(mass * 1000).ToString();
+
+                        tempValue = "0";
+                        resMas[2] = integerVal + tempValue; // 1 знак после запятой
+
+                        tempValue = "00";
+                        resMas[3] = integerVal + tempValue; // 2 знака после запятой
+
+                        tempValue = "000";
+                        resMas[4] = integerVal + tempValue; // 3 знака после запятой
+
+                        tempValue = "0000";
+                        resMas[5] = integerVal + tempValue; // 4 знака после запятой
+                    }
+                }
+                else
+                {
+                    unitsType = (int)MassaFormatUnits.kilo;
+
+                    integerVal = Math.Truncate(massa).ToString() + ",";
+                    mantisa = (mass - (1 * (Math.Floor(mass / 1) * Math.Sign(mass)))).ToString();
+
+                    if (mantisa != "0") // т-кг
+                    {
+                        resMas[0] = Math.Truncate(mass).ToString(); // в грамах
+
+                        resMas[1] = Math.Truncate(massa).ToString() + "  кг";
 
                         tempValue = mantisa.Substring(2, 1);
                         resMas[2] = integerVal + tempValue; // 1 знак после запятой
@@ -412,70 +464,68 @@ namespace FixV._2
                         tempValue = mantisa.Substring(2, 4);
                         resMas[5] = integerVal + tempValue; // 4 знака после запятой
 
-                        tempValue = mantisa.Substring(2, 5);
-                        resMas[6] = integerVal + tempValue; // 5 знака после запятой
                     }
                     else
                     {
-                        resMas[0] = Math.Truncate(mass * 1000).ToString();
-                        resMas[1] = Math.Truncate(mass).ToString(); // целое значение
+                        resMas[0] = Math.Truncate(mass).ToString(); // в грамах
+
+                        resMas[1] = Math.Truncate(massa).ToString() + "  кг";
 
                         tempValue = "0";
                         resMas[2] = integerVal + tempValue; // 1 знак после запятой
 
                         tempValue = "00";
-                        resMas[3] = integerVal + tempValue; // 2 знака после запятой
+                        resMas[3] = integerVal + tempValue; // 1 знак после запятой
 
                         tempValue = "000";
                         resMas[4] = integerVal + tempValue; // 3 знака после запятой
 
-                        tempValue = "0000";
+                        tempValue = "000";
                         resMas[5] = integerVal + tempValue; // 4 знака после запятой
 
-                        tempValue = "00000";
-                        resMas[6] = integerVal + tempValue; // 5 знака после запятой
-                    }
-                }
-                else
-                {
-                    integerVal = Math.Truncate(mass / 1000).ToString() + ",";
-                    mantisa = Math.IEEERemainder(Math.Truncate(mass / 1000), 1).ToString();
-
-                    if (mantisa != "0")// т-кг
-                    {
-                        resMas[0] = Math.Truncate(mass / 1000).ToString() + "  т";
-
-                        tempValue = mantisa.Substring(2, 1);
-                        resMas[1] = integerVal + tempValue; // 1 знак после запятой
-
-                        tempValue = mantisa.Substring(2, 2);
-                        resMas[2] = integerVal + tempValue; // 2 знака после запятой
-
-                        resMas[3] = Math.Truncate(mass).ToString(); // 3 знака после запятой
-
-                        tempValue = mantisa.Substring(2, 4);
-                        resMas[4] = integerVal + tempValue; // 4 знака после запятой
-                    }
-                    else
-                    {
-                        resMas[0] = Math.Truncate(mass / 1000).ToString() + "  т";
-
-                        tempValue = "0";
-                        resMas[1] = integerVal + tempValue; // 1 знак после запятой
-
-                        tempValue = "00";
-                        resMas[2] = integerVal + tempValue; // 1 знак после запятой
-
-                        resMas[3] = Math.Truncate(mass).ToString(); // 3 знака после запятой
-
-                        tempValue = "000";
-                        resMas[4] = integerVal + tempValue; // 3 знака после запятой
                     }
                 }
             
                 return resMas;
             }
             return new string[1];
+        }
+
+        public static void DefineMassaFormat(int selectedIndex, int unitsType)
+        {
+            int accuracyType = 0;
+            switch (selectedIndex)
+            {
+                case 0:
+                    if (unitsType == (int)MassaFormatUnits.kilo)
+                    {
+                        accuracyType = (int)MassaFormatAccuracy.without_ext;
+                        unitsType = (int)MassaFormatUnits.grams;
+                    }
+                    else
+                    {
+                        accuracyType = (int)MassaFormatAccuracy._3_symbol_after_point;
+                        unitsType = (int)MassaFormatUnits.kilo;
+                    }
+                    break;
+                case 1:
+                    accuracyType = (int)MassaFormatAccuracy.without_ext;
+                    break;
+                case 2:
+                    accuracyType = (int)MassaFormatAccuracy._1_symbol_after_point;
+                    break;
+                case 3:
+                    accuracyType = (int)MassaFormatAccuracy._2_symbol_after_point;
+                    break;
+                case 4:
+                    accuracyType = (int)MassaFormatAccuracy._3_symbol_after_point;
+                    break;
+                default:
+                    accuracyType = (int)MassaFormatAccuracy._4_symbol_after_point;
+                    break;
+            }
+
+            Propertiy.MassaFormat = unitsType.ToString() + accuracyType.ToString();
         }
 
         //значение обозначения из модели/чертежа
@@ -517,5 +567,37 @@ namespace FixV._2
             return mas;
         }
 
+
+        public static string[,] PropertiesForEachConf()
+        {
+            bool f;
+            string[] names = Class.GetAllConfigurations(out f);
+            string [ ,  ] mas = new string[names.Length, 4];
+
+            for (int i = 0; i < names.Length; i++)
+            {
+                GetProperties(names[i]);
+                mas[i, 0] = Propertiy.Designition;
+                mas[i, 1] = Propertiy.Name;
+                mas[i, 2] = Propertiy.Division;
+                mas[i, 3] = Propertiy.Weight;
+            }
+            
+            return mas;
+        }
+
+        public enum MassaFormatAccuracy
+        {
+            without_ext = 0,
+            _1_symbol_after_point = 1,
+            _2_symbol_after_point = 2,
+            _3_symbol_after_point = 3,
+            _4_symbol_after_point = 4
+        }
+        public enum MassaFormatUnits
+        {
+            grams = 1,
+            kilo = 2
+        }
     }
 }

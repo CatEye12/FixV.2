@@ -21,6 +21,7 @@ namespace FixV._2
         {
             InitializeComponent();
             Class.GetSolidObject();
+            
             Class.Start();
 
             Class.FixPropertys();
@@ -101,9 +102,7 @@ namespace FixV._2
 
             // МАССА
             TxtMass.ItemsSource = Class.massaValues;
-
-
-            mass();
+            
         }
 
         private void FillForm()
@@ -231,8 +230,6 @@ namespace FixV._2
         }
 
 
-
-
         private void Grid_Loaded_1(object sender, RoutedEventArgs e)
         {
          
@@ -269,11 +266,11 @@ namespace FixV._2
 
         private void CboMass_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            mass();
+            
         }
         private void CboTol_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            mass();
+            
         }
 
         private void ChkFormat_Click(object sender, RoutedEventArgs e)
@@ -294,8 +291,6 @@ namespace FixV._2
         {
             MClose = 1;
 
-            //applyMProp();
-
             Apply_Click(true, e);
 
             Close();
@@ -304,6 +299,7 @@ namespace FixV._2
         }
         private void Close_Click(object sender, RoutedEventArgs e)
         {
+            Window1 window1 = new Window1();
             //try
             //{
             //    if (longwarnings != (int)swFileLoadWarning_e.swFileLoadWarning_AlreadyOpen & MDoc != 1)
@@ -399,6 +395,11 @@ namespace FixV._2
         private void ChkMassTable_Click(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void TxtMass_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            Class.DefineMassaFormat(TxtMass.SelectedIndex, Class.unitsType);
         }
     }
 }

@@ -116,20 +116,20 @@
             <StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <Label Content="Масса:" />
-                    <ComboBox Name="TxtMass" Height="23" Width="65" Background="#FFEEEEEE" BorderBrush="Black"
-                             Margin="30,0,0,0" />
-                    <Label Name="LblMass" Width="15" />
+                    <ComboBox Name="TxtMass" Height="22" Width="83" Background="#FFEEEEEE" BorderBrush="Black"
+                             Margin="30,0,0,0" SelectionChanged="TxtMass_SelectionChanged" />
+                    <Label x:Name="LblMass" Width="15" />
                     <CheckBox x:Name="ChkMassTable" Content="См. табл." Click="ChkMassTable_Click"
                               VerticalAlignment="Center" Margin="10,0,0,0" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <Label Content="Единицы:" VerticalAlignment="Center" />
-                    <ComboBox Name="CboMass" Width="65" SelectionChanged="CboMass_SelectionChanged"
+                    <ComboBox Name="CboMass" Width="83" SelectionChanged="CboMass_SelectionChanged"
                               VerticalAlignment="Center" Margin="15,0,0,0" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <Label Content="Точность:" />
-                    <ComboBox Name="CboTol" Width="65" SelectionChanged="CboTol_SelectionChanged" Margin="15,0,0,0" />
+                    <ComboBox Name="CboTol" Width="82" SelectionChanged="CboTol_SelectionChanged" Margin="15,0,0,0" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal"/>
                 <StackPanel Orientation="Horizontal"/>
