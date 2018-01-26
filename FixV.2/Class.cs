@@ -2,7 +2,7 @@
 using SolidWorks.Interop.swconst;
 using System;
 using System.Runtime.InteropServices;
-
+using System.Collections.Generic;
 
 namespace FixV._2
 {
@@ -17,6 +17,12 @@ namespace FixV._2
         private static string configName = String.Empty;
         public static string[] massaValues = null;
         public static int unitsType = 0;
+        public static bool configChanged = false;
+        public static string[] configNames;
+        public static int configIterator = 99;
+        public static bool lockForConf;
+        internal static string[] razdel = { "Документація", "Комплекси", "Складальні одиниці", "Деталі", "Комплекти", "ЭМ-Сборочные-единицы", "ЭМ-Детали" };
+
 
         public static string configuracione
         {
@@ -29,7 +35,8 @@ namespace FixV._2
             swApp = (SldWorks)Marshal.GetActiveObject("SldWorks.Application");
             swModel = swApp.ActiveDoc;
             docType = (swDocumentTypes_e)swModel.GetType();
-            configName = swModel.GetActiveConfiguration().Name;
+            configName = swModel.GetActiveConfiguration().Name;//при первом вызове присваеваеться активная конфигурация
+            Class.configNames = Class.GetAllConfigurations(out lockForConf);
         }
 
         public static void Start()
@@ -110,7 +117,6 @@ namespace FixV._2
             }
         }
         
-
 
         /// <summary>
         /// Удаляет свойства, если они не в своей категории 
@@ -243,13 +249,13 @@ namespace FixV._2
             swModel.Extension.CustomPropertyManager[""].Get5("MassaFormat", true, out ValOut, out ResValOut, out WasResolved);
             Propertiy.MassaFormat = ResValOut;
 
-            swModel.Extension.CustomPropertyManager[ConfigName].Get5("Обозначение", true, out ValOut, out ResValOut, out WasResolved);
+            swModel.Extension.CustomPropertyManager[ConfigName].Get5("Обозначение", false, out ValOut, out ResValOut, out WasResolved);
             Propertiy.Designition = ResValOut;
-            swModel.Extension.CustomPropertyManager[ConfigName].Get5("Раздел", true, out ValOut, out ResValOut, out WasResolved);
+            swModel.Extension.CustomPropertyManager[ConfigName].Get5("Раздел", false, out ValOut, out ResValOut, out WasResolved);
             Propertiy.Division = ResValOut;
-            swModel.Extension.CustomPropertyManager[ConfigName].Get5("Масса", true, out ValOut, out ResValOut, out WasResolved);
+            swModel.Extension.CustomPropertyManager[ConfigName].Get5("Масса", false, out ValOut, out ResValOut, out WasResolved);
             Propertiy.Weight = ResValOut;
-            swModel.Extension.CustomPropertyManager[ConfigName].Get5("Наименование", true, out ValOut, out ResValOut, out WasResolved);
+            swModel.Extension.CustomPropertyManager[ConfigName].Get5("Наименование", false, out ValOut, out ResValOut, out WasResolved);
             Propertiy.Name = ResValOut;
 
 
@@ -283,6 +289,10 @@ namespace FixV._2
             if (Propertiy.Designition == String.Empty)
             {
                 GetModelName();
+            }
+            else
+            {
+                WithVersionOrNo();
             }
             
             if (Propertiy.Division == String.Empty)
@@ -329,7 +339,42 @@ namespace FixV._2
                 }
             }
         }
+        public static void DefineMassaFormat(int selectedIndex, int unitsType)
+        {
+            int accuracyType = 0;
+            switch (selectedIndex)
+            {
+                case 0:
+                    if (unitsType == (int)MassaFormatUnits.kilo)
+                    {
+                        accuracyType = (int)MassaFormatAccuracy.without_ext;
+                        unitsType = (int)MassaFormatUnits.grams;
+                    }
+                    else
+                    {
+                        accuracyType = (int)MassaFormatAccuracy._3_symbol_after_point;
+                        unitsType = (int)MassaFormatUnits.kilo;
+                    }
+                    break;
+                case 1:
+                    accuracyType = (int)MassaFormatAccuracy.without_ext;
+                    break;
+                case 2:
+                    accuracyType = (int)MassaFormatAccuracy._1_symbol_after_point;
+                    break;
+                case 3:
+                    accuracyType = (int)MassaFormatAccuracy._2_symbol_after_point;
+                    break;
+                case 4:
+                    accuracyType = (int)MassaFormatAccuracy._3_symbol_after_point;
+                    break;
+                default:
+                    accuracyType = (int)MassaFormatAccuracy._4_symbol_after_point;
+                    break;
+            }
 
+            Propertiy.MassaFormat = unitsType.ToString() + accuracyType.ToString();
+        }
 
         public static void SetProperties(string confName)
         {
@@ -374,14 +419,48 @@ namespace FixV._2
             
            swModel.ForceRebuild3(false);
         }
-       
+        
 
+        //значение обозначения из модели/чертежа
+        private static void GetModelName()
+        {
+            string name = swModel.GetTitle();
+
+            if (name.ToUpper().Contains(".SLD"))
+            {
+                if (docType == swDocumentTypes_e.swDocDRAWING)
+                {
+                    Propertiy.Designition = name.Remove(name.Length - 15, 15);
+                }
+                else
+                {
+                    Propertiy.Designition = name.Remove(name.Length - 7, 7);
+                }
+            }
+            else
+            {
+                if (docType == swDocumentTypes_e.swDocDRAWING)
+                {
+                    Propertiy.Designition = name.Remove(name.Length - 7, 7);
+                }
+            }
+        }
         public static string[] GetModelWeight()
         {
             string path = swModel.GetPathName();
-            swModel.ShowConfiguration2(Class.configuracione);
-            //swModel.ForceRebuild3(false);
-            //swModel.Save();
+
+            if (Class.configChanged  == true || Class.configIterator == 99)
+            {
+                swModel.ShowConfiguration2(Class.configuracione);
+            }
+            else 
+            {
+                swModel.ShowConfiguration2(Class.configNames[configIterator]);
+                configIterator++;
+            }
+
+
+
             int status = 99;
             double[] masProperties = swModel.Extension.GetMassProperties2(1, out status, true);
             double massa = Convert.ToDouble(masProperties?[5]); // в килограммах
@@ -444,7 +523,7 @@ namespace FixV._2
                     unitsType = (int)MassaFormatUnits.kilo;
 
                     integerVal = Math.Truncate(massa).ToString() + ",";
-                    mantisa = (mass - (1 * (Math.Floor(mass / 1) * Math.Sign(mass)))).ToString();
+                    mantisa = (massa - (1 * (Math.Floor(massa / 1) * Math.Sign(massa)))).ToString();
 
                     if (mantisa != "0") // т-кг
                     {
@@ -482,75 +561,11 @@ namespace FixV._2
 
                         tempValue = "000";
                         resMas[5] = integerVal + tempValue; // 4 знака после запятой
-
                     }
                 }
-            
                 return resMas;
             }
             return new string[1];
-        }
-
-        public static void DefineMassaFormat(int selectedIndex, int unitsType)
-        {
-            int accuracyType = 0;
-            switch (selectedIndex)
-            {
-                case 0:
-                    if (unitsType == (int)MassaFormatUnits.kilo)
-                    {
-                        accuracyType = (int)MassaFormatAccuracy.without_ext;
-                        unitsType = (int)MassaFormatUnits.grams;
-                    }
-                    else
-                    {
-                        accuracyType = (int)MassaFormatAccuracy._3_symbol_after_point;
-                        unitsType = (int)MassaFormatUnits.kilo;
-                    }
-                    break;
-                case 1:
-                    accuracyType = (int)MassaFormatAccuracy.without_ext;
-                    break;
-                case 2:
-                    accuracyType = (int)MassaFormatAccuracy._1_symbol_after_point;
-                    break;
-                case 3:
-                    accuracyType = (int)MassaFormatAccuracy._2_symbol_after_point;
-                    break;
-                case 4:
-                    accuracyType = (int)MassaFormatAccuracy._3_symbol_after_point;
-                    break;
-                default:
-                    accuracyType = (int)MassaFormatAccuracy._4_symbol_after_point;
-                    break;
-            }
-
-            Propertiy.MassaFormat = unitsType.ToString() + accuracyType.ToString();
-        }
-
-        //значение обозначения из модели/чертежа
-        private static void GetModelName()
-        {
-            string name = swModel.GetTitle();
-
-            if (name.ToUpper().Contains(".SLD"))
-            {
-                if (docType == swDocumentTypes_e.swDocDRAWING)
-                {
-                    Propertiy.Designition = name.Remove(name.Length - 15, 15);
-                }
-                else
-                {
-                    Propertiy.Designition = name.Remove(name.Length - 7, 7);
-                }
-            }
-            else
-            {
-                if (docType == swDocumentTypes_e.swDocDRAWING)
-                {
-                    Propertiy.Designition = name.Remove(name.Length - 7, 7);
-                }
-            }
         }
         public static string [] GetAllConfigurations(out bool lockForConfBox)
         {
@@ -566,24 +581,14 @@ namespace FixV._2
             }
             return mas;
         }
-
-
-        public static string[,] PropertiesForEachConf()
+        public static bool WithVersionOrNo()
         {
-            bool f;
-            string[] names = Class.GetAllConfigurations(out f);
-            string [ ,  ] mas = new string[names.Length, 4];
-
-            for (int i = 0; i < names.Length; i++)
+            Propertiy._Version = false;
+            if (Propertiy.Designition.Substring(Propertiy.Designition.Length - 3, 3).StartsWith("-"))
             {
-                GetProperties(names[i]);
-                mas[i, 0] = Propertiy.Designition;
-                mas[i, 1] = Propertiy.Name;
-                mas[i, 2] = Propertiy.Division;
-                mas[i, 3] = Propertiy.Weight;
+                Propertiy._Version = true;
             }
-            
-            return mas;
+            return Propertiy._Version;
         }
 
         public enum MassaFormatAccuracy

@@ -13,7 +13,6 @@ namespace FixV._2
         private int MForm;
         private int MClose;
         private int m;
-        bool lockForConf;
 
         public int MChkBlank;
 
@@ -21,11 +20,8 @@ namespace FixV._2
         {
             InitializeComponent();
             Class.GetSolidObject();
-            
             Class.Start();
-
             Class.FixPropertys();
-
             Class.GetProperties(Class.configuracione);
             FillControlsWithDefaultValues();
             FillForm();
@@ -39,6 +35,7 @@ namespace FixV._2
             Propertiy.Letter = CboLit.SelectedItem?.ToString();
             Propertiy.Weight = TxtMass.SelectedItem?.ToString();
             Propertiy.Format = CboFormat.SelectedItem?.ToString();
+            Propertiy._Version = (CheckBox_Version.IsChecked == null) ? false : true;
         }
 
         private void FillControlsWithDefaultValues()
@@ -46,11 +43,11 @@ namespace FixV._2
 
             CboConfig.Items.Clear();
             //КОНФИГУРАЦИЯ
-            foreach (var item in Class.GetAllConfigurations(out lockForConf))
+            foreach (var item in Class.configNames)
             {
                    CboConfig.Items.Add(item);
             }
-            if (lockForConf == true) { CboConfig.IsEnabled = false; }
+            if (Class.lockForConf == true) { CboConfig.IsEnabled = false; }
 
             CboConfig.Text = Class.configuracione;
 
@@ -79,8 +76,8 @@ namespace FixV._2
             //РАЗДЕЛ
             ComboBoxSection.Items.Clear();
 
-            string[] razdel = { "Документація", "Комплекси", "Складальні одиниці", "Деталі", "Комплекти", "ЭМ-Сборочные-единицы", "ЭМ-Детали" };
-            foreach (string r in razdel)
+            //string[] razdel = { "Документація", "Комплекси", "Складальні одиниці", "Деталі", "Комплекти", "ЭМ-Сборочные-единицы", "ЭМ-Детали" };
+            foreach (string r in Class.razdel)
             {
                 ComboBoxSection.Items.Add(r);
             }
@@ -102,7 +99,8 @@ namespace FixV._2
 
             // МАССА
             TxtMass.ItemsSource = Class.massaValues;
-            
+
+
         }
 
         private void FillForm()
@@ -115,6 +113,7 @@ namespace FixV._2
             CboConfig.SelectedItem = Class.configuracione;
             CboFormat.SelectedItem = Propertiy.Format;
             TxtMass.SelectedItem = Propertiy.Weight;
+            CheckBox_Version.IsChecked = Propertiy._Version;
         }
 
 
@@ -127,6 +126,7 @@ namespace FixV._2
             TxtMass.Text = "";
             CboConfig.SelectedItem = "";
             CboFormat.SelectedItem = "";
+            CheckBox_Version.IsChecked = false;
         }
         private void mass()
         {
@@ -252,14 +252,14 @@ namespace FixV._2
 
         private void Version_Click(object sender, RoutedEventArgs e)
         {
-            if (Version.IsChecked == true)
+            if (CheckBox_Version.IsChecked == true)
             {
                 Propertiy.Designition += "-" + Class.configuracione;
                 TxtNumber.Text = Propertiy.Designition;
             }
             else
             {
-                Propertiy.Designition = Propertiy.Designition.Replace("-" + Class.configuracione, "");  // (Propertiy.Designition.Length - Class.activeConfigName.Length - 1, );
+                Propertiy.Designition = Propertiy.Designition.Replace("-" + Class.configuracione, "");
                 TxtNumber.Text = Propertiy.Designition;
             }
         }
@@ -328,12 +328,17 @@ namespace FixV._2
 
         private void CboConfig_DropDownClosed(object sender, EventArgs e)
         {
+            Class.configChanged = true;
             if(CboConfig.SelectedItem.ToString() != Class.configuracione)
             {
                 Class.configuracione = CboConfig.SelectedItem.ToString();
                 Class.GetProperties(Class.configuracione);
                 FillControlsWithDefaultValues();
                 FillForm();
+
+                Class.configChanged = false;
+
+
             }
         }
 

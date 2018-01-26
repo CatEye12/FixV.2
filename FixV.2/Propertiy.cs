@@ -3,6 +3,9 @@
     class Propertiy
     {
         // для настроек
+
+        public static bool _Version;
+
         public static string DocCode;
 
         public static string DocType;

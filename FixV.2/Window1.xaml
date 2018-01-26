@@ -5,10 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:FixV._2"
         mc:Ignorable="d"
-        Title="Window1" Height="300" Width="300">
+        Title="Window1" Height="300" Width="500">
     
     <Grid ShowGridLines="True" Name="MainGrid">
-        <DataGrid x:Name="dataGrid"  VerticalAlignment="Top" Height="227"/>
+        <DataGrid x:Name="dataGrid"  VerticalAlignment="Top" Height="227" CanUserAddRows="False" Width="auto" AutoGenerateColumns="False" CanUserResizeRows="False"  />
+        <Button x:Name="SaveChangesOnGrid"  Content="Сохранить" HorizontalAlignment="Left" Margin="24,239,0,0" VerticalAlignment="Top" Width="80" Click="SaveChangesOnGrid_Click"/>
+        <Button x:Name="UndoChanges" Content="Не сохранять" HorizontalAlignment="Left" Margin="136,239,0,0" VerticalAlignment="Top" Width="80" Click="UndoChanges_Click"/>
 
     </Grid>
 </Window>

@@ -183,7 +183,7 @@
                 </StackPanel>
             </GroupBox>
             <StackPanel>
-                <CheckBox Name="Version" Content="Исполнение" HorizontalAlignment="Left"
+                <CheckBox Name="CheckBox_Version" Content="Исполнение" HorizontalAlignment="Left"
                           Margin="3"
                           VerticalAlignment="Top" Click="Version_Click"/>
             </StackPanel>
